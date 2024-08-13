@@ -6,6 +6,12 @@ class Ciphertext:
         self.data = data[:]
         self.dim = len(data)
 
+    def __len__(self) -> int:
+        return self.dim
+
+    def __eq__(self, other: "Ciphertext") -> bool:
+        return self.data == other.data
+
     def __add__(self, other: "Ciphertext") -> "Ciphertext":
         assert self.dim == other.dim
         return Ciphertext([self.data[i] + other.data[i] for i in range(len(self.data))])
