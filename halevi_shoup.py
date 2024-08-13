@@ -61,4 +61,17 @@ def matrix_vector_multiply(
     packed_matrix: list[Ciphertext], vector: Ciphertext
 ) -> Ciphertext:
     """Multiply the Halevi-Shoup-packed matrix by the vector."""
-    return None
+    assert len(packed_matrix) == len(vector)
+
+    n = len(packed_matrix)
+    row_products = []
+    for i in range(n):
+        row_products.append(packed_matrix[i] * vector.rotate(-i))
+
+    # Sum the results together
+    result = row_products[0]
+    for i in range(1, n):
+        result += row_products[i]
+
+    return result
+
