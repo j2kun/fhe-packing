@@ -16,9 +16,13 @@ class Ciphertext:
         assert self.dim == other.dim
         return Ciphertext([self.data[i] + other.data[i] for i in range(len(self.data))])
 
-    def __mul__(self, other: "Ciphertext") -> "Ciphertext":
-        assert self.dim == other.dim
-        return Ciphertext([self.data[i] * other.data[i] for i in range(len(self.data))])
+    def __mul__(self, other) -> "Ciphertext":
+        if isinstance(other, Ciphertext):
+            assert self.dim == other.dim
+            return Ciphertext([self.data[i] * other.data[i] for i in range(len(self.data))])
+        elif isinstance(other, int):
+            # Plaintext-ciphertext multiplication
+            return Ciphertext([other * x for x in self.data])
 
     def rotate(self, n: int) -> "Ciphertext":
         n = n % self.dim
