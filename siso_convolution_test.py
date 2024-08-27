@@ -2,12 +2,74 @@ import pytest
 from hypothesis import given
 from hypothesis.strategies import composite, integers, lists
 
-from computational_model import Ciphertext
 from siso_convolution import (
     pack_rowwise,
     siso_convolution,
     plaintext_convolution,
+    prepare_filters,
 )
+
+
+def test_prepare_filters():
+    n = 4
+    filter = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    pad = 1
+
+    # fmt: off
+    expected = [
+        [
+            [[0, 0, 0, 0],
+             [0, 1, 1, 1],
+             [0, 1, 1, 1],
+             [0, 1, 1, 1]], # k1
+
+            [[0, 0, 0, 0],
+             [2, 2, 2, 2],
+             [2, 2, 2, 2],
+             [2, 2, 2, 2]], # k2
+
+            [[0, 0, 0, 0],
+             [3, 3, 3, 0],
+             [3, 3, 3, 0],
+             [3, 3, 3, 0]], # k3
+        ],
+        [
+            [[0, 4, 4, 4],
+             [0, 4, 4, 4],
+             [0, 4, 4, 4],
+             [0, 4, 4, 4]], # k4
+
+            [[5, 5, 5, 5],
+             [5, 5, 5, 5],
+             [5, 5, 5, 5],
+             [5, 5, 5, 5]], # k5
+
+            [[6, 6, 6, 0],
+             [6, 6, 6, 0],
+             [6, 6, 6, 0],
+             [6, 6, 6, 0]], # k6
+        ],
+        [
+            [[0, 7, 7, 7],
+             [0, 7, 7, 7],
+             [0, 7, 7, 7],
+             [0, 0, 0, 0]], # k7
+
+            [[8, 8, 8, 8],
+             [8, 8, 8, 8],
+             [8, 8, 8, 8],
+             [0, 0, 0, 0]], # k8
+
+            [[9, 9, 9, 0],
+             [9, 9, 9, 0],
+             [9, 9, 9, 0],
+             [0, 0, 0, 0]], # k9
+        ],
+    ]
+    # fmt: on
+
+    actual = prepare_filters((n, n), filter, pad)
+    assert actual == expected
 
 
 @composite
@@ -28,8 +90,9 @@ def random_matrix(draw, shape=(4, 4)):
 def run_test(matrix, filter, pack_fn, conv_fn, pad=1):
     n, m = len(matrix), len(matrix[0])
     packed_matrix = pack_fn(matrix)
-    result = conv_fn(packed_matrix, (n, m), filter, pad=pad)
-    expected = plaintext_convolution(matrix, filter)
+    prepared_filters = prepare_filters((n, m), filter, pad=pad)
+    result = conv_fn(packed_matrix, (n, m), prepared_filters, pad=pad)
+    expected = plaintext_convolution(matrix, filter, pad=pad)
     expected = [x for row in expected for x in row]
     expected.extend([0] * (len(result.data) - len(expected)))
     assert result.data == expected, result.data
@@ -58,16 +121,13 @@ def test_plaintext_convolution_padded():
 def test_simple():
     matrix = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]
     filter = [[0, 0], [0, 1]]
-    # expect 1 in index 8
     run_test(matrix, filter, pack_rowwise, siso_convolution, pad=0)
 
 
 def test_simple2():
     matrix = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
     filter = [[-1, -2, -3], [-4, -5, -6], [-7, -8, -9]]
-    import ipdb; ipdb.set_trace()
-    # expect 1 in index 8
-    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=0)
+    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=1)
 
 
 @given(random_matrix(shape=(4, 4)), random_matrix(shape=(2, 2)))

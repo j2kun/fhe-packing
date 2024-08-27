@@ -2,9 +2,10 @@
 
 
 class Ciphertext:
-    def __init__(self, data: list[int]):
+    def __init__(self, data: list[int], original_shape: tuple[int, int] = None):
         self.data = data[:]
         self.dim = len(data)
+        self.original_shape = original_shape
 
     def __len__(self) -> int:
         return self.dim
@@ -27,6 +28,12 @@ class Ciphertext:
     def rotate(self, n: int) -> "Ciphertext":
         n = n % self.dim
         return Ciphertext(self.data[-n:] + self.data[:-n])
+
+    def __repr__(self) -> str:
+        return f"Ciphertext({self.data})"
+
+    def __str__(self) -> str:
+        return f"Ciphertext({self.data})"
 
 
 def is_power_of_two(n: int) -> bool:
