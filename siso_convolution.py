@@ -41,6 +41,11 @@ def prepare_filters(matrix_shape, filter, pad):
                     if test_matrix[i + fi][j + fj] == 1:
                         filters[fi][fj][i][j] = filter[fi][fj]
 
+    for i in range(fn):
+        for j in range(fm):
+            print(f"Prepared filter for output entries using filter index ({i}, {j}):")
+            print_as_square(filters[i][j])
+
     return map_matrix(filters, lambda f: Ciphertext(flatten(f), original_shape=(fn, fm)))
 
 
@@ -54,16 +59,17 @@ def siso_convolution(packed_matrix, image_shape, prepared_filters, pad=1):
     output = Ciphertext(
         [0] * len(packed_matrix.data), original_shape=packed_matrix.original_shape
     )
-    offset = (filter_width - 1) // 2  # does this only work for odd-size filters?
+    offset = (filter_width - 1) // 2 + pad - 1  # this only works for odd-size filters
     for i in range(filter_width):
         for j in range(filter_width):
             # The Gazelle paper is confusing because their rotation is
             # backwards: negative rotation rotates index 0 to the right, to a
-            # larger index, so we need to negative the rotation amount given to
+            # larger index, so we need to negate the rotation amount given to
             # our rotation function.
             rotation = ncols * (i - offset) + (j - offset)
             rotated = packed_matrix.rotate(-rotation)
-            print(print_as_square(rotated))
+            print(f"Rotated by {-rotation} for filter index ({i}, {j}):")
+            print_as_square(rotated)
             output += rotated * prepared_filters[i][j]
 
     return output

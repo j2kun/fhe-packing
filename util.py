@@ -20,15 +20,21 @@ def ones(shape):
     return fill(shape, 1)
 
 
-def print_as_square(matrix):
+def as_square(matrix):
     data = matrix.data if isinstance(matrix, Ciphertext) else matrix
     if isinstance(data[0], list):
         data = flatten(data)
     n = int(len(data) ** 0.5)
+    s = ""
     for i in range(n):
         for j in range(n):
-            print(f"{data[i*n + j]}, ", end="")
-        print("")
+            s += f"{data[i*n + j]}, "
+        s += "\n"
+    return s
+
+
+def print_as_square(matrix):
+    print(as_square(matrix))
 
 
 def pad_zeros(matrix, pad):

@@ -1,3 +1,4 @@
+import pytest
 from hypothesis import given
 from hypothesis.strategies import composite, integers, lists
 from util import map_matrix, flatten
@@ -97,7 +98,7 @@ def run_test(matrix, filter, pack_fn, conv_fn, pad=1):
     expected = plaintext_convolution(matrix, filter, pad=pad)
     expected = [x for row in expected for x in row]
     expected.extend([0] * (len(result.data) - len(expected)))
-    assert result.data == expected, result.data
+    assert expected == result.data
 
 
 def test_plaintext_convolution():
@@ -120,18 +121,31 @@ def test_plaintext_convolution_padded():
     assert plaintext_convolution(matrix, filter, pad=1) == expected
 
 
-def test_simple():
-    matrix = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]
+@pytest.mark.parametrize("pad", [0, 1])
+def test_simple(pad):
+    matrix = [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     filter = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]
-    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=0)
+    # zero pad, so first entry should have a 1
+    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=pad)
 
 
-def test_simple2():
+@pytest.mark.parametrize("pad", [0, 1])
+def test_simple2(pad):
     matrix = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
     filter = [[-1, -2, -3], [-4, -5, -6], [-7, -8, -9]]
+    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=pad)
+
+
+@given(
+    random_matrix(shape=(4, 4)),
+    random_matrix(shape=(3, 3)),
+)
+def test_4_by_4_with_3_by_3_filter(matrix, filter):
     run_test(matrix, filter, pack_rowwise, siso_convolution, pad=1)
 
 
-@given(random_matrix(shape=(4, 4)), random_matrix(shape=(3, 3)))
-def test_4_by_4_filter(matrix, filter):
-    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=1)
+# @pytest.mark.parametrize("pad", list(range(10)))
+# def test_larger_pads(pad):
+#     matrix = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
+#     filter = [[-1, -2, -3], [-4, -5, -6], [-7, -8, -9]]
+#     run_test(matrix, filter, pack_rowwise, siso_convolution, pad=pad)
