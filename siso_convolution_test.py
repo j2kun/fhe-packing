@@ -1,6 +1,6 @@
-import pytest
 from hypothesis import given
 from hypothesis.strategies import composite, integers, lists
+from util import map_matrix, flatten
 
 from siso_convolution import (
     pack_rowwise,
@@ -69,7 +69,9 @@ def test_prepare_filters():
     # fmt: on
 
     actual = prepare_filters((n, n), filter, pad)
-    assert actual == expected
+    for i in range(len(actual)):
+        for j in range(len(actual[i])):
+            assert actual[i][j].data == flatten(expected[i][j])
 
 
 @composite
@@ -120,7 +122,7 @@ def test_plaintext_convolution_padded():
 
 def test_simple():
     matrix = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]
-    filter = [[0, 0], [0, 1]]
+    filter = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]
     run_test(matrix, filter, pack_rowwise, siso_convolution, pad=0)
 
 
@@ -130,6 +132,6 @@ def test_simple2():
     run_test(matrix, filter, pack_rowwise, siso_convolution, pad=1)
 
 
-@given(random_matrix(shape=(4, 4)), random_matrix(shape=(2, 2)))
+@given(random_matrix(shape=(4, 4)), random_matrix(shape=(3, 3)))
 def test_4_by_4_filter(matrix, filter):
-    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=0)
+    run_test(matrix, filter, pack_rowwise, siso_convolution, pad=1)
