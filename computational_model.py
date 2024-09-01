@@ -21,6 +21,10 @@ class Ciphertext:
         if isinstance(other, Ciphertext):
             assert self.dim == other.dim
             return Ciphertext([self.data[i] * other.data[i] for i in range(len(self.data))])
+        elif isinstance(other, list):
+            # Plaintext-ciphertext multiplication
+            assert self.dim == len(other) and isinstance(other[0], int)
+            return Ciphertext([x * y for (x, y) in zip(self.data, other)])
         elif isinstance(other, int):
             # Plaintext-ciphertext multiplication
             return Ciphertext([other * x for x in self.data])
