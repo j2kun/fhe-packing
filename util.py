@@ -70,10 +70,13 @@ class ConvolutionIterationIndex:
     # every 9 yields from convolution_indices.
     filter_index: tuple[int]
 
+    # the combined index is the base_index + filter_index
+    combined_index: tuple[int]
+
     # true or false depending on whether the current index position is within
     # the bounds of the original (unpadded) matrix.
     base_index_within_bounds: bool
-    filter_index_within_bounds: bool
+    combined_index_within_bounds: bool
 
 
 def convolution_indices(matrix_shape, filter_shape, pad=0, stride=1):
@@ -92,7 +95,7 @@ def convolution_indices(matrix_shape, filter_shape, pad=0, stride=1):
     assert len(pad) == len(matrix_shape) == len(filter_shape) == len(stride)
 
     start = [-x for x in pad]
-    stop = [x + y for x, y in zip(matrix_shape, pad)]
+    stop = [x + y - f + 1 for x, y, f in zip(matrix_shape, pad, filter_shape)]
 
     matrix_iter_ranges = [
         list(range(start, stop, stride))
@@ -107,13 +110,14 @@ def convolution_indices(matrix_shape, filter_shape, pad=0, stride=1):
         )
 
         for filter_index in itertools.product(*filter_iter_ranges):
-            filter_index_within_bounds = all(
+            combined_index_within_bounds = all(
                 0 <= base + f_index < dim
                 for base, f_index, dim in zip(base_index, filter_index, matrix_shape)
             )
             yield ConvolutionIterationIndex(
                 base_index=base_index,
                 filter_index=filter_index,
+                combined_index=tuple(b + f for b, f in zip(base_index, filter_index)),
                 base_index_within_bounds=base_index_within_bounds,
-                filter_index_within_bounds=filter_index_within_bounds,
+                combined_index_within_bounds=combined_index_within_bounds,
             )
