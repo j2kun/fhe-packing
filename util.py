@@ -1,3 +1,5 @@
+import itertools
+from dataclasses import dataclass
 from computational_model import Ciphertext
 
 
@@ -51,3 +53,67 @@ def pad_zeros(matrix, pad):
 
 def map_matrix(matrix, fn):
     return [[fn(x) for x in row] for row in matrix]
+
+
+@dataclass(frozen=True)
+class ConvolutionIterationIndex:
+    """An index for iterating over the convolution of a matrix and a filter.
+    Returned by convolution_indices."""
+
+    # The base_index tracks the current position of the top left of the
+    # filter as it slides along the matrix. (0, 0) is the top left of the
+    # matrix, so when padding is nonzero, these indices can be negative.
+    base_index: tuple[int]
+
+    # The filter_index tracks the current position within the filter.
+    # i.e., for a (3, 3) filter, the filter indices will range from 0 to 2
+    # every 9 yields from convolution_indices.
+    filter_index: tuple[int]
+
+    # true or false depending on whether the current index position is within
+    # the bounds of the original (unpadded) matrix.
+    base_index_within_bounds: bool
+    filter_index_within_bounds: bool
+
+
+def convolution_indices(matrix_shape, filter_shape, pad=0, stride=1):
+    """Generate indices for the convolution of a matrix and a filter.
+
+    matrix_shape: the per-axis dimensions of the matrix
+    filter_shape: the per-axis dimensions of the filter
+    pad: the per-axis amount of padding (added to the beginning and end of each axis)
+    stride: the per-axis stride
+    """
+    if type(pad) == int:
+        pad = [pad] * len(matrix_shape)
+    if type(stride) == int:
+        stride = [stride] * len(matrix_shape)
+
+    assert len(pad) == len(matrix_shape) == len(filter_shape) == len(stride)
+
+    start = [-x for x in pad]
+    stop = [x + y for x, y in zip(matrix_shape, pad)]
+
+    matrix_iter_ranges = [
+        list(range(start, stop, stride))
+        for start, stop, stride in zip(start, stop, stride)
+    ]
+    filter_iter_ranges = [list(range(0, dim)) for dim in filter_shape]
+
+    for indices in itertools.product(*matrix_iter_ranges):
+        base_index = tuple(indices)
+        base_index_within_bounds = all(
+            0 <= ndx < dim for ndx, dim in zip(base_index, matrix_shape)
+        )
+
+        for filter_index in itertools.product(*filter_iter_ranges):
+            filter_index_within_bounds = all(
+                0 <= base + f_index < dim
+                for base, f_index, dim in zip(base_index, filter_index, matrix_shape)
+            )
+            yield ConvolutionIterationIndex(
+                base_index=base_index,
+                filter_index=filter_index,
+                base_index_within_bounds=base_index_within_bounds,
+                filter_index_within_bounds=filter_index_within_bounds,
+            )
