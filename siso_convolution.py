@@ -63,9 +63,9 @@ def siso_convolution(packed_matrix, image_shape, prepared_filters, pad=1):
     for i in range(filter_width):
         for j in range(filter_width):
             # The Gazelle paper is confusing because their rotation is
-            # backwards: negative rotation rotates index 0 to the right, to a
-            # larger index, so we need to negate the rotation amount given to
-            # our rotation function.
+            # backwards from our convention: their positive rotation rotates
+            # index 0 leftward, while we rotate rightward, so we need to negate
+            # the rotation amount given to our rotation function.
             rotation = ncols * (i - offset) + (j - offset)
             rotated = packed_matrix.rotate(-rotation)
             print(f"Rotated by {-rotation} for filter index ({i}, {j}):")

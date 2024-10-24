@@ -30,6 +30,7 @@ class Ciphertext:
             return Ciphertext([other * x for x in self.data])
 
     def rotate(self, n: int) -> "Ciphertext":
+        """Rotate a ciphertext rightward n positions."""
         n = n % self.dim
         return Ciphertext(self.data[-n:] + self.data[:-n])
 
