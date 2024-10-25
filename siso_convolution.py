@@ -1,8 +1,15 @@
-"""Jukevar-Vaikuntanathan-Chandrakasan SISO convolution technique."""
+"""Jukevar-Vaikuntanathan-Chandrakasan SISO convolution technique from the Gazelle paper."""
 
 from computational_model import Ciphertext
 from computational_model import is_power_of_two
-from util import flatten, zeros, ones, print_as_square, pad_zeros, map_matrix
+from util import (
+    convolution_indices,
+    flatten,
+    map_matrix,
+    pad_zeros,
+    print_as_square,
+    zeros,
+)
 
 
 def pack_rowwise(matrix):
@@ -19,63 +26,57 @@ def prepare_filters(matrix_shape, filter, pad):
     """Construct punctured filters for SISO convolution."""
     n, m = matrix_shape
     fn, fm = len(filter), len(filter[0])
-    # for striding, you would divide by S before adding 1
-    # output_shape = (n - fn + 2 * pad + 1, m - fm + 2 * pad + 1)
-    test_matrix = ones(matrix_shape)
-    test_matrix = pad_zeros(test_matrix, pad)
-    padded_n, padded_m = len(test_matrix), len(test_matrix[0])
-
     filters = [[zeros(matrix_shape) for _ in range(fm)] for _ in range(fn)]
-    # print("Test matrix:")
-    # print_as_square(test_matrix)
 
-    for i in range(padded_n):
-        if i + fn > padded_n:
-            continue
-        for j in range(padded_m):
-            if j + fm > padded_m:
-                continue
+    indices = convolution_indices(matrix_shape=(n, m), filter_shape=(fn, fm), pad=pad, stride=1)
+    for iter_index in indices:
+        if iter_index.combined_index_within_bounds:
+            fi, fj = iter_index.filter_index
+            i, j = iter_index.combined_index
+            filters[fi][fj][i][j] = filter[fi][fj]
 
-            for fi in range(fn):
-                for fj in range(fm):
-                    if test_matrix[i + fi][j + fj] == 1:
-                        filters[fi][fj][i][j] = filter[fi][fj]
+    ciphertexts = map_matrix(
+        filters, lambda f: Ciphertext(flatten(f), original_shape=(fn, fm))
+    )
 
     for i in range(fn):
         for j in range(fm):
-            print(f"Prepared filter for output entries using filter index ({i}, {j}):")
-            print_as_square(filters[i][j])
+            # The Gazelle paper's rotation is backwards from our convention:
+            # their positive rotation rotates index 0 leftward, while we rotate
+            # rightward, so we need to negate the rotation amount given to our
+            # rotation function.
+            rotation = -m * (i - pad) - (j - pad)
+            ciphertexts[i][j] = ciphertexts[i][j].rotate(rotation)
+            print(f"Prepared filter for output entries using filter index ({i}, {j}), rotated by {rotation}:")
+            print_as_square(ciphertexts[i][j])
 
-    return map_matrix(filters, lambda f: Ciphertext(flatten(f), original_shape=(fn, fm)))
+    return ciphertexts
 
 
-def siso_convolution(packed_matrix, image_shape, prepared_filters, pad=1):
+def siso_convolution(packed_matrix, matrix_shape, prepared_filters, pad=1):
     """Apply the SISO convolution to the packed matrix."""
-    nrows, ncols = image_shape
-
+    nrows, ncols = matrix_shape
     filter_width, filter_height = prepared_filters[0][0].original_shape
-    assert filter_width == filter_height
 
     output = Ciphertext(
         [0] * len(packed_matrix.data), original_shape=packed_matrix.original_shape
     )
-    offset = (filter_width - 1) // 2 + pad - 1  # this only works for odd-size filters
-    for i in range(filter_width):
+    for i in range(filter_height):
         for j in range(filter_width):
-            # The Gazelle paper is confusing because their rotation is
-            # backwards from our convention: their positive rotation rotates
-            # index 0 leftward, while we rotate rightward, so we need to negate
-            # the rotation amount given to our rotation function.
-            rotation = ncols * (i - offset) + (j - offset)
-            rotated = packed_matrix.rotate(-rotation)
-            print(f"Rotated by {-rotation} for filter index ({i}, {j}):")
+            # The Gazelle paper's rotation is backwards from our convention:
+            # their positive rotation rotates index 0 leftward, while we rotate
+            # rightward, so we need to negate the rotation amount given to our
+            # rotation function.
+            rotation = -ncols * (i - pad) - (j - pad)
+            rotated = packed_matrix.rotate(rotation)
+            print(f"Rotated by {rotation} for filter index ({i}, {j}):")
             print_as_square(rotated)
             output += rotated * prepared_filters[i][j]
 
     return output
 
 
-def plaintext_convolution(matrix, filter, pad=1):
+def plaintext_convolution(matrix, filter, pad):
     matrix = pad_zeros(matrix, pad)
     n, m = len(matrix), len(matrix[0])
     fn, fm = len(filter), len(filter[0])

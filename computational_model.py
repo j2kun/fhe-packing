@@ -15,24 +15,37 @@ class Ciphertext:
 
     def __add__(self, other: "Ciphertext") -> "Ciphertext":
         assert self.dim == other.dim
-        return Ciphertext([self.data[i] + other.data[i] for i in range(len(self.data))])
+        return Ciphertext(
+            [self.data[i] + other.data[i] for i in range(len(self.data))],
+            original_shape=self.original_shape,
+        )
 
     def __mul__(self, other) -> "Ciphertext":
         if isinstance(other, Ciphertext):
             assert self.dim == other.dim
-            return Ciphertext([self.data[i] * other.data[i] for i in range(len(self.data))])
+            return Ciphertext(
+                [self.data[i] * other.data[i] for i in range(len(self.data))],
+                original_shape=self.original_shape,
+            )
         elif isinstance(other, list):
             # Plaintext-ciphertext multiplication
             assert self.dim == len(other) and isinstance(other[0], int)
-            return Ciphertext([x * y for (x, y) in zip(self.data, other)])
+            return Ciphertext(
+                [x * y for (x, y) in zip(self.data, other)],
+                original_shape=self.original_shape,
+            )
         elif isinstance(other, int):
             # Plaintext-ciphertext multiplication
-            return Ciphertext([other * x for x in self.data])
+            return Ciphertext(
+                [other * x for x in self.data], original_shape=self.original_shape
+            )
 
     def rotate(self, n: int) -> "Ciphertext":
         """Rotate a ciphertext rightward n positions."""
         n = n % self.dim
-        return Ciphertext(self.data[-n:] + self.data[:-n])
+        return Ciphertext(
+            self.data[-n:] + self.data[:-n], original_shape=self.original_shape
+        )
 
     def __repr__(self) -> str:
         return f"Ciphertext({self.data})"
@@ -52,7 +65,7 @@ def rotate_and_sum(ciphertext: Ciphertext) -> Ciphertext:
     n = len(ciphertext.data)
     assert is_power_of_two(n)
     # copy so as not to mutate the input
-    result = Ciphertext(ciphertext.data[:])
+    result = Ciphertext(ciphertext.data[:], original_shape=ciphertext.original_shape)
 
     shift = n // 2
     while shift > 0:
