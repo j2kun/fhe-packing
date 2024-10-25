@@ -47,7 +47,7 @@ def prepare_filters(matrix_shape, filter, pad):
             # rotation function.
             rotation = -m * (i - pad) - (j - pad)
             ciphertexts[i][j] = ciphertexts[i][j].rotate(rotation)
-            print(f"Prepared filter for output entries using filter index ({i}, {j}), rotated by {rotation}:")
+            print(f"Prepared filter for ({i}, {j}), rotated by {rotation}:")
             print_as_square(ciphertexts[i][j])
 
     return ciphertexts
