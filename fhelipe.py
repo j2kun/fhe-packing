@@ -2,7 +2,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 from dataclasses import dataclass
-import itertools
 
 
 def is_power_of_two(n: int) -> bool:
