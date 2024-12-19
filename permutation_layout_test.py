@@ -1,13 +1,18 @@
-from permutation_layout import row_major_layout, column_major_layout
+from permutation_layout import Add
+from permutation_layout import AffineExpr
+from permutation_layout import AffineMap
+from permutation_layout import Constant
+from permutation_layout import DimId
+from permutation_layout import Mul
+from permutation_layout import column_major_layout
+from permutation_layout import from_affine_map
+from permutation_layout import row_major_layout
 
 
 def test_single_ciphertext_row_major_layout():
-    ciphertext_size = (1, 32)
+    ciphertext_shape = (1, 32)
     data_shape = (4, 4)
-    layout = row_major_layout(data_shape, ciphertext_size)
-    assert (
-        str(layout)
-        == """Layout[(1, 32) -> (4, 4)](
+    expected = """Layout[(1, 32) -> (4, 4)](
   (0, 0) -> (0, 0)
   (0, 1) -> (0, 1)
   (0, 2) -> (0, 2)
@@ -40,16 +45,21 @@ def test_single_ciphertext_row_major_layout():
   (0, 29) -> G
   (0, 30) -> G
   (0, 31) -> G)"""
+    layout = row_major_layout(data_shape, ciphertext_shape)
+    assert str(layout) == expected
+
+    affine_map = AffineMap(
+        dims=["d0", "d1"],
+        exprs=[DimId(dim_id="d0"), DimId(dim_id="d1")],
     )
+    layout = from_affine_map(affine_map, data_shape, ciphertext_shape)
+    assert str(layout) == expected
 
 
 def test_multi_ciphertext_row_major_layout():
-    ciphertext_size = (2, 16)
+    ciphertext_shape = (2, 16)
     data_shape = (4, 6)
-    layout = row_major_layout(data_shape, ciphertext_size)
-    assert (
-        str(layout)
-        == """Layout[(2, 16) -> (4, 6)](
+    expected = """Layout[(2, 16) -> (4, 6)](
   (0, 0) -> (0, 0)
   (0, 1) -> (0, 1)
   (0, 2) -> (0, 2)
@@ -82,16 +92,15 @@ def test_multi_ciphertext_row_major_layout():
   (1, 13) -> G
   (1, 14) -> G
   (1, 15) -> G)"""
-    )
+
+    layout = row_major_layout(data_shape, ciphertext_shape)
+    assert str(layout) == expected
 
 
 def test_single_ciphertext_column_major_layout():
-    ciphertext_size = (1, 32)
+    ciphertext_shape = (1, 32)
     data_shape = (4, 4)
-    layout = column_major_layout(data_shape, ciphertext_size)
-    assert (
-        str(layout)
-        == """Layout[(1, 32) -> (4, 4)](
+    expected = """Layout[(1, 32) -> (4, 4)](
   (0, 0) -> (0, 0)
   (0, 1) -> (1, 0)
   (0, 2) -> (2, 0)
@@ -124,16 +133,14 @@ def test_single_ciphertext_column_major_layout():
   (0, 29) -> G
   (0, 30) -> G
   (0, 31) -> G)"""
-    )
+    layout = column_major_layout(data_shape, ciphertext_shape)
+    assert str(layout) == expected
 
 
 def test_multi_ciphertext_column_major_layout():
-    ciphertext_size = (2, 16)
+    ciphertext_shape = (2, 16)
     data_shape = (4, 6)
-    layout = column_major_layout(data_shape, ciphertext_size)
-    assert (
-        str(layout)
-        == """Layout[(2, 16) -> (4, 6)](
+    expected = """Layout[(2, 16) -> (4, 6)](
   (0, 0) -> (0, 0)
   (0, 1) -> (1, 0)
   (0, 2) -> (2, 0)
@@ -166,6 +173,5 @@ def test_multi_ciphertext_column_major_layout():
   (1, 13) -> G
   (1, 14) -> G
   (1, 15) -> G)"""
-    )
-
-
+    layout = column_major_layout(data_shape, ciphertext_shape)
+    assert str(layout) == expected
