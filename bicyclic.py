@@ -6,7 +6,7 @@ Jingwei Chen, Linhan Yang, Wenyuan Wu, Yang Liu, Yong Feng
 https://eprint.iacr.org/2024/1762
 """
 
-from math import gcd, ceil
+from math import gcd
 
 from computational_model import Ciphertext
 
@@ -89,18 +89,20 @@ def matrix_multiply(
     result = Ciphertext([0] * len(packed_matrix_a))
     print(f"m={m}, n={n}, p={p}")
 
-    r = ceil(n / m)
-    while (r*n - m) % p != 0:
-        r += 1
-    print(f"Using r = {r} for BMM-I")
+    # Sec 5.2.1, equation 9 from https://eprint.iacr.org/2025/1200 simplifies
+    # the formulas from the original BMM-I algorithm.
+    m_inv_mod_n = pow(m, -1, n)
+    p_inv_mod_n = pow(p, -1, n)
 
-    for i in range(n):
-        a_rot = (-i * m) % (m*n)
-        b_rot = (i * (r*n - m)) % (n*p)
+    for c in range(n):
+        a_rot = c * m * m_inv_mod_n % (m * n)
+        b_rot = c * p * p_inv_mod_n % (n * p)
         rotated_a = packed_matrix_a.rotate(a_rot)
         rotated_b = packed_matrix_b.rotate(b_rot)
-        prod = (rotated_a * rotated_b)
-        print(f"step={i}, i_a={a_rot}, i_b={b_rot}, rotated_a={rotated_a}, rotated_b={rotated_b}, prod={prod}")
+        prod = rotated_a * rotated_b
+        print(
+            f"step={c}, i_a={a_rot}, i_b={b_rot}, rotated_a={rotated_a}, rotated_b={rotated_b}, prod={prod}"
+        )
         result += prod
 
     return result
