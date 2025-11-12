@@ -128,3 +128,16 @@ def matrix_vector_multiply_squat(
         mask[i] = 1
 
     return result * Ciphertext(mask)
+
+
+if __name__ == "__main__":
+    matrix = [[1, 2, 3, 4, 5, 6, 7, 8], [3, 4, 5, 6, 7, 8, 9, 10]]
+    vector = [1, -1, 2, 0, 3, 4, -1, 0]
+    packed_matrix = pack_squat(matrix)
+    import numpy as np
+    np_m = np.array(matrix)
+    np_v = np.array(vector)
+    np_result = np_m @ np_v
+    print(np_result)
+    import ipdb; ipdb.set_trace()
+    result = matrix_vector_multiply_squat(packed_matrix, Ciphertext(vector))
